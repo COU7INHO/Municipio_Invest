@@ -28,6 +28,10 @@ class Municipality(models.Model):
     _id = models.CharField(max_length=20, unique=True)
     district = models.ForeignKey(District, on_delete=models.CASCADE, null=True, blank=True)
     nuts_III = models.ForeignKey(NUTSIII, on_delete=models.CASCADE, null=True, blank=True)
+    
+    class Meta:
+        verbose_name_plural = "Municipalities"
+
     def __str__(self):
         return self.name
 
