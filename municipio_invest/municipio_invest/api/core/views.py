@@ -13,10 +13,7 @@ from municipio_invest.api.core.models import (
 )
 from municipio_invest.api.core.helpers import (
     check_municipality_exists_in_db,
-    request_municipality,
-    request_contracts,
-    format_date,
-    format_price
+    request_municipality
 )
 from municipio_invest.api.generic_errors import APIRequestError
 
@@ -68,6 +65,26 @@ class MunicipalityView(GenericAPIView):
                 )
 
 
+class MunicipalitiesView(GenericAPIView):
+    """
+    View to manage multiple municipalities
+    """
+    serializer_class = MunicipalitySerializer
+    queryset = Municipality.objects.all()
+
+    def get(self, request: Request):        
+        """
+        Method to return all available municipalities with pagination
+        """
+        page_size = request.query_params.get("page_size", 20)
+        paginator = PageNumberPagination()
+        paginator.page_size = page_size
+
+        paginated_contracts = paginator.paginate_queryset(self.get_queryset(), request)
+        serializer = self.get_serializer(paginated_contracts, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
 class ContractsView(GenericAPIView):
     serializer_class = ContractSerializer
     queryset = Contract.objects.all()
@@ -83,7 +100,6 @@ class ContractsView(GenericAPIView):
         try:
             municipality = Municipality.objects.get(_id=municipality_id)
         except Municipality.DoesNotExist:
-            print("Municipality does not exist")
             return Response(
                 {"error": "Failed to find municipality"},
                 status=status.HTTP_404_NOT_FOUND,
