@@ -112,16 +112,15 @@ def request_contracts(municipality_id: int, size: int = 25):
         # Create a list of contract instances to be bulk inserted
         contract_instances = []
         existing_contract_ids = set(Contract.objects.filter(contracting_party=municipality).values_list('contract_id', flat=True))
-
         for item in contracts_data:
             contract_id = item.get("id")
 
             if contract_id in existing_contract_ids:
                 continue  # Skip if contract_id already exists in the database
 
-            contract_price = format_price(item.get("initialContractualPrice"))
-            publication_date = format_date(item.get("publicationDate"))
-            signing_date = format_date(item.get("signingDate"))
+            contract_price = format_price(item.get("initialContractualPrice", None))
+            publication_date = format_date(item.get("publicationDate", None))
+            signing_date = format_date(item.get("signingDate", None))
 
             # Skip if either price or date is invalid (None or empty)
             if contract_price is None or publication_date is None or signing_date is None:
@@ -143,26 +142,35 @@ def request_contracts(municipality_id: int, size: int = 25):
 
         # If there are contracts to insert, perform bulk_create
         if contract_instances:
-            Contract.objects.bulk_create(contract_instances)
+            Contract.objects.bulk_create(contract_instances, ignore_conflicts=True)
 
         page += 1  # Move to the next page
 
 def format_date(date_str):
-    return datetime.strptime(date_str, "%d-%m-%Y").strftime("%Y-%m-%d")
+    if not date_str:
+        return None
+    try:
+        return datetime.strptime(date_str, "%d-%m-%Y").strftime("%Y-%m-%d")
+    except Exception:
+        return None
 
 def format_price(price_str):
-    # Remove the currency symbol and any spaces
-    price_str = price_str.replace(" €", "").replace(" ", "")
-    
-    # Replace the thousands separator (period) with an empty string
-    price_str = price_str.replace(".", "")
-    
-    # Replace the decimal separator (comma) with a period
-    price_str = price_str.replace(",", ".")
-    
-    # Convert to Decimal
-    price = Decimal(price_str)
-    
-    # Round to two decimal places
-    return price.quantize(Decimal('0.01'))  # Rounds to 2 decimal places
-
+    if not price_str:
+        return None
+    try:
+        # Remove the currency symbol and any spaces
+        price_str = price_str.replace(" €", "").replace(" ", "")
+        
+        # Replace the thousands separator (period) with an empty string
+        price_str = price_str.replace(".", "")
+        
+        # Replace the decimal separator (comma) with a period
+        price_str = price_str.replace(",", ".")
+        
+        # Convert to Decimal
+        price = Decimal(price_str)
+        
+        # Round to two decimal places
+        return price.quantize(Decimal('0.01'))  # Rounds to 2 decimal places
+    except Exception:
+        return None

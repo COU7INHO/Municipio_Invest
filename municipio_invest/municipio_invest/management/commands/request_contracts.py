@@ -15,7 +15,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'Fetching contracts for municipality: {municipality._id}'))
 
             try:
-                request_contracts(municipality_id=municipality._id)
+                request_contracts(municipality_id=int(municipality._id))
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"Error fetching contracts for municipality {municipality._id}: {str(e)}"))
 
